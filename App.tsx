@@ -1,6 +1,7 @@
+import { useState } from 'react'; //vai guardar as infos e atualiza a tela qnd mudam
 import { StatusBar } from 'expo-status-bar';
+
 import {
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,7 +17,16 @@ type TaskForm = {
   description: string;
 };
 
+type Task = {
+  id: string; //pra identificar qual tarefa q vai ser excluida
+  name: string;
+  description: string;
+};
+
 export default function App() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [finishedTasks, setFinishedTasks] = useState(0);
+
   const {
     control,
     handleSubmit,
@@ -30,11 +40,22 @@ export default function App() {
   });
 
   function createTask(data: TaskForm) {
-    Alert.alert('Task created!', data.name);
+    const newTask: Task = { 
+      id: Date.now().toString(),
+      name: data.name,
+      description: data.description,
+    };
 
-    console.log(data);
+    setTasks([...tasks, newTask]);
 
     reset();
+  }
+
+  function deleteTask(id: string) {
+    const updatedTasks = tasks.filter((task) => task.id !== id);
+
+    setTasks(updatedTasks);
+    setFinishedTasks(finishedTasks + 1);
   }
 
   return (
@@ -117,9 +138,39 @@ export default function App() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>To-do</Text>
 
-          <Text style={styles.emptyText}>
-            Your tasks will appear here.
-          </Text>
+          {tasks.length === 0 ? (
+            <Text style={styles.emptyText}>
+              Your tasks will appear here.
+            </Text>
+          ) : (
+            <ScrollView //rolagem pra quando tiver com muitas tasks
+              style={styles.taskList}
+              nestedScrollEnabled
+            >
+              {tasks.map((task) => (
+                <View key={task.id} style={styles.taskItem}>
+                  <View style={styles.taskTextArea}>
+                    <Text style={styles.taskName}>
+                      {task.name}
+                    </Text>
+
+                    <Text style={styles.taskDescription}>
+                      {task.description}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => deleteTask(task.id)}
+                  >
+                    <Text style={styles.deleteButtonText}>
+                      ×
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
         </View>
 
         <View style={styles.counterCard}>
@@ -127,7 +178,9 @@ export default function App() {
             Finished tasks quantity
           </Text>
 
-          <Text style={styles.counterNumber}>00</Text>
+          <Text style={styles.counterNumber}> 
+            {finishedTasks.toString().padStart(2, '0')} 
+          </Text> 
         </View>
 
         <View style={styles.quoteArea}>
@@ -237,6 +290,52 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     paddingVertical: 18,
+  },
+
+  taskList: {
+    maxHeight: 230,
+  },
+
+  taskItem: {
+    backgroundColor: '#494949',
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  taskTextArea: {
+    flex: 1,
+    marginRight: 10,
+  },
+
+  taskName: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+
+  taskDescription: {
+    color: '#C5C5C5',
+    fontSize: 10,
+    lineHeight: 14,
+  },
+
+  deleteButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFA5A5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  deleteButtonText: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    lineHeight: 24,
   },
 
   counterCard: {
