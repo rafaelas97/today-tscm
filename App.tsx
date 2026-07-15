@@ -1,4 +1,4 @@
-import { useState } from 'react'; //vai guardar as infos e atualiza a tela qnd mudam
+import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 
 import {
@@ -11,6 +11,13 @@ import {
 } from 'react-native';
 
 import { Controller, useForm } from 'react-hook-form';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+} from '@tanstack/react-query';
 
 type TaskForm = {
   name: string;
@@ -18,12 +25,43 @@ type TaskForm = {
 };
 
 type Task = {
-  id: string; //pra identificar qual tarefa q vai ser excluida
+  id: string;
   name: string;
   description: string;
 };
 
+type ChuckNorrisResponse = {
+  value: string;
+};
+
+const TASKS_STORAGE_KEY = '@today_tasks';
+const FINISHED_STORAGE_KEY = '@today_finished_tasks';
+
+const queryClient = new QueryClient();
+
+async function getChuckNorrisJoke(): Promise<ChuckNorrisResponse> {
+  const response = await fetch(
+    'https://api.chucknorris.io/jokes/random'
+  );
+
+  if (!response.ok) {
+    throw new Error('Error loading Chuck Norris phrase.');
+  }
+
+  const data = await response.json();
+
+  return data;
+}
+
 export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TodayApp />
+    </QueryClientProvider>
+  );
+}
+
+function TodayApp() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [finishedTasks, setFinishedTasks] = useState(0);
 
@@ -39,23 +77,102 @@ export default function App() {
     },
   });
 
-  function createTask(data: TaskForm) {
-    const newTask: Task = { 
+  const {
+    data: jokeData,
+    isPending: isJokeLoading,
+    isError: isJokeError,
+  } = useQuery({
+    queryKey: ['chuckNorrisJoke'],
+    queryFn: getChuckNorrisJoke,
+    refetchInterval: 5000,
+  });
+
+  useEffect(() => {
+    loadSavedData();
+  }, []);
+
+  async function loadSavedData() {
+    try {
+      const savedTasks = await AsyncStorage.getItem(
+        TASKS_STORAGE_KEY
+      );
+
+      const savedFinishedTasks = await AsyncStorage.getItem(
+        FINISHED_STORAGE_KEY
+      );
+
+      if (savedTasks) {
+        const convertedTasks: Task[] = JSON.parse(savedTasks);
+
+        setTasks(convertedTasks);
+      }
+
+      if (savedFinishedTasks) {
+        setFinishedTasks(Number(savedFinishedTasks));
+      }
+    } catch (error) {
+      console.log('Error loading saved data:', error);
+    }
+  }
+
+  async function createTask(data: TaskForm) {
+    const newTask: Task = {
       id: Date.now().toString(),
       name: data.name,
       description: data.description,
     };
 
-    setTasks([...tasks, newTask]);
+    const updatedTasks = [...tasks, newTask];
+
+    setTasks(updatedTasks);
+
+    try {
+      await AsyncStorage.setItem(
+        TASKS_STORAGE_KEY,
+        JSON.stringify(updatedTasks)
+      );
+    } catch (error) {
+      console.log('Error saving task:', error);
+    }
 
     reset();
   }
 
-  function deleteTask(id: string) {
-    const updatedTasks = tasks.filter((task) => task.id !== id);
+  async function deleteTask(id: string) {
+    const updatedTasks = tasks.filter(
+      (task) => task.id !== id
+    );
+
+    const updatedFinishedTasks = finishedTasks + 1;
 
     setTasks(updatedTasks);
-    setFinishedTasks(finishedTasks + 1);
+    setFinishedTasks(updatedFinishedTasks);
+
+    try {
+      await AsyncStorage.setItem(
+        TASKS_STORAGE_KEY,
+        JSON.stringify(updatedTasks)
+      );
+
+      await AsyncStorage.setItem(
+        FINISHED_STORAGE_KEY,
+        updatedFinishedTasks.toString()
+      );
+    } catch (error) {
+      console.log('Error deleting task:', error);
+    }
+  }
+
+  function showChuckNorrisPhrase() {
+    if (isJokeLoading) {
+      return 'Loading Chuck Norris phrase...';
+    }
+
+    if (isJokeError) {
+      return 'Could not load Chuck Norris phrase.';
+    }
+
+    return jokeData?.value || 'Chuck Norris is thinking...';
   }
 
   return (
@@ -72,9 +189,13 @@ export default function App() {
         </Text>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Add new to-do</Text>
+          <Text style={styles.cardTitle}>
+            Add new to-do
+          </Text>
 
-          <Text style={styles.label}>Task name:</Text>
+          <Text style={styles.label}>
+            Task name:
+          </Text>
 
           <Controller
             control={control}
@@ -100,7 +221,9 @@ export default function App() {
             </Text>
           )}
 
-          <Text style={styles.label}>Task description:</Text>
+          <Text style={styles.label}>
+            Task description:
+          </Text>
 
           <Controller
             control={control}
@@ -110,7 +233,10 @@ export default function App() {
             }}
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                style={[styles.input, styles.descriptionInput]}
+                style={[
+                  styles.input,
+                  styles.descriptionInput,
+                ]}
                 placeholder="Placeholder..."
                 placeholderTextColor="#888888"
                 multiline
@@ -131,24 +257,31 @@ export default function App() {
             style={styles.button}
             onPress={handleSubmit(createTask)}
           >
-            <Text style={styles.buttonText}>Create to-do</Text>
+            <Text style={styles.buttonText}>
+              Create to-do
+            </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>To-do</Text>
+          <Text style={styles.cardTitle}>
+            To-do
+          </Text>
 
           {tasks.length === 0 ? (
             <Text style={styles.emptyText}>
               Your tasks will appear here.
             </Text>
           ) : (
-            <ScrollView //rolagem pra quando tiver com muitas tasks
+            <ScrollView
               style={styles.taskList}
               nestedScrollEnabled
             >
               {tasks.map((task) => (
-                <View key={task.id} style={styles.taskItem}>
+                <View
+                  key={task.id}
+                  style={styles.taskItem}
+                >
                   <View style={styles.taskTextArea}>
                     <Text style={styles.taskName}>
                       {task.name}
@@ -178,21 +311,25 @@ export default function App() {
             Finished tasks quantity
           </Text>
 
-          <Text style={styles.counterNumber}> 
-            {finishedTasks.toString().padStart(2, '0')} 
-          </Text> 
+          <Text style={styles.counterNumber}>
+            {finishedTasks
+              .toString()
+              .padStart(2, '0')}
+          </Text>
         </View>
 
         <View style={styles.quoteArea}>
           <Text style={styles.quote}>
-            “Motivational Chuck Norris Phrase”
+            “{showChuckNorrisPhrase()}”
           </Text>
 
-          <Text style={styles.author}>By Chuck Norris.</Text>
+          <Text style={styles.author}>
+            By Chuck Norris.
+          </Text>
         </View>
 
         <Text style={styles.footer}>
-          @Did from by ♥ Rafa ♥
+          Did with ♥ by Rafaela
         </Text>
       </ScrollView>
     </View>
@@ -360,6 +497,7 @@ const styles = StyleSheet.create({
   },
 
   quoteArea: {
+    minHeight: 65,
     marginTop: 4,
   },
 
@@ -367,6 +505,7 @@ const styles = StyleSheet.create({
     color: '#BEBEBE',
     fontSize: 10,
     fontStyle: 'italic',
+    lineHeight: 15,
   },
 
   author: {
