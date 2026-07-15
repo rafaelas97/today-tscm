@@ -13,11 +13,16 @@
     "android": {
       "package": "com.rafaelaleonidas.todaytscm",
       "versionCode": 1,
+      "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/vector.svg",
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#333333"
-      },
-      "edgeToEdgeEnabled": true
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "cfe8c3f1-8831-4d4c-8c2f-f4d8138fb144"
+      }
     }
   }
 }
