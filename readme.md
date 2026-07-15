@@ -15,3 +15,7 @@ tecnologias:
 4- TypeScript;
 5- AsyncStorage;
 6- Github.
+
+APK
+O aplicativo pode ser instalado em dispoitivos Android no link abaixo:
+[Baixar APK do Today](https://expo.dev/artifacts/eas/GVA9z5tKXW8QgoxDBiX5AkD0q-IPLLbwIKnRm-tKuHw.apk)
