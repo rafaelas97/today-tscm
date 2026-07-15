@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 
 import {
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -140,9 +141,17 @@ export default function Home() {
       <StatusBar style="light" />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>
-          <Text style={styles.titleBold}>To</Text>day
-        </Text>
+        <View style={styles.titleArea}>
+          <Image
+            source={require('../../assets/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+
+          <Text style={styles.title}>
+            <Text style={styles.titleBold}>To</Text>day
+          </Text>
+        </View>
 
         <Text style={styles.subtitle}>
           Wake up, go ahead, do the thing not tomorrow, do today.
@@ -290,6 +299,17 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
 
+  titleArea: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  logo: {
+    width: 40,
+    height: 40,
+    marginRight: 10,
+  },
+
   title: {
     color: '#FFFFFF',
     fontSize: 38,
@@ -304,7 +324,7 @@ const styles = StyleSheet.create({
     color: '#BEBEBE',
     fontSize: 11,
     lineHeight: 16,
-    marginTop: 5,
+    marginTop: 6,
     marginBottom: 22,
   },
 
