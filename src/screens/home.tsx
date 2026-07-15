@@ -11,26 +11,28 @@ import {
   View,
 } from 'react-native';
 
-import { Controller, useForm } from 'react-hook-form';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Controller, useForm } from 'react-hook-form'; 
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
 import { useQuery } from '@tanstack/react-query';
-
 import TaskItem from '../components/TaskItem';
 import { getChuckNorrisJoke } from '../services/chuckNorrisApi';
 import { Task, TaskForm } from '../types/Task';
 
-const TASKS_STORAGE_KEY = '@today_tasks';
-const FINISHED_STORAGE_KEY = '@today_finished_tasks';
+//as chaves de salvar e contar as atvs
+const TASKS_STORAGE_KEY = '@today_tasks'; 
+const FINISHED_STORAGE_KEY = '@today_finished_tasks'; 
 
 export default function Home() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [finishedTasks, setFinishedTasks] = useState(0);
+  // Guarda a lista de tarefas e a quantidade de tarefas finalizadas
+  const [tasks, setTasks] = useState<Task[]>([]); 
+  const [finishedTasks, setFinishedTasks] = useState(0); 
 
+  // controle do formulario, valida, limpa os campos depois de criados
   const {
     control,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors }, 
   } = useForm<TaskForm>({
     defaultValues: {
       name: '',
@@ -38,6 +40,7 @@ export default function Home() {
     },
   });
 
+  //frase da api a cada 5s
   const {
     data: jokeData,
     isPending: isJokeLoading,
@@ -48,10 +51,12 @@ export default function Home() {
     refetchInterval: 5000,
   });
 
+  // carrega os dados qnd a tela abre
   useEffect(() => {
     loadSavedData();
   }, []);
 
+  
   async function loadSavedData() {
     try {
       const savedTasks = await AsyncStorage.getItem(
@@ -76,6 +81,7 @@ export default function Home() {
     }
   }
 
+  // cria uma tarefa, atualiza e salva no celular
   async function createTask(data: TaskForm) {
     const newTask: Task = {
       id: Date.now().toString(),
@@ -90,7 +96,7 @@ export default function Home() {
     try {
       await AsyncStorage.setItem(
         TASKS_STORAGE_KEY,
-        JSON.stringify(updatedTasks)
+        JSON.stringify(updatedTasks) 
       );
     } catch (error) {
       console.log('Error saving task:', error);
@@ -99,6 +105,7 @@ export default function Home() {
     reset();
   }
 
+  //deleta uma tarefa e adiciona no contador +1 atividade finalizada
   async function deleteTask(id: string) {
     const updatedTasks = tasks.filter(
       (task) => task.id !== id
@@ -124,30 +131,30 @@ export default function Home() {
     }
   }
 
+  //mensagens da api
   function showChuckNorrisPhrase() {
     if (isJokeLoading) {
       return 'Loading Chuck Norris phrase...';
     }
 
-    if (isJokeError) {
-      return 'Could not load Chuck Norris phrase.';
-    }
-
     return jokeData?.value || 'Chuck Norris is thinking...';
   }
 
+
+
   return (
-    <View style={styles.container}>
+    <View style={styles.container}> 
+
       <StatusBar style="light" />
 
       <ScrollView contentContainerStyle={styles.content}>
+        {/*logo e titulo*/}
         <View style={styles.titleArea}>
           <Image
             source={require('../../assets/logo.png')}
             style={styles.logo}
             resizeMode="contain"
           />
-
           <Text style={styles.title}>
             <Text style={styles.titleBold}>To</Text>day
           </Text>
@@ -157,6 +164,7 @@ export default function Home() {
           Wake up, go ahead, do the thing not tomorrow, do today.
         </Text>
 
+{/*formulario*/}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>
             Add new to-do
@@ -166,6 +174,7 @@ export default function Home() {
             Task name:
           </Text>
 
+{/*une o campo de nome com react hook form*/}
           <Controller
             control={control}
             name="name"
@@ -193,7 +202,7 @@ export default function Home() {
           <Text style={styles.label}>
             Task description:
           </Text>
-
+{/*une o campo de descrição com o react hook form*/}
           <Controller
             control={control}
             name="description"
@@ -221,7 +230,7 @@ export default function Home() {
               {errors.description.message}
             </Text>
           )}
-
+{/*botao para validar e criar a tarefa*/}
           <TouchableOpacity
             style={styles.button}
             onPress={handleSubmit(createTask)}
@@ -246,6 +255,7 @@ export default function Home() {
               style={styles.taskList}
               nestedScrollEnabled
             >
+
               {tasks.map((task) => (
                 <TaskItem
                   key={task.id}
@@ -257,18 +267,19 @@ export default function Home() {
           )}
         </View>
 
+{/*qntd de tarefas removidas (concluidas)*/}
         <View style={styles.counterCard}>
           <Text style={styles.counterTitle}>
             Finished tasks quantity
           </Text>
-
           <Text style={styles.counterNumber}>
             {finishedTasks
               .toString()
-              .padStart(2, '0')}
+              .padStart(2, '0')} 
           </Text>
         </View>
 
+{/*frases*/}
         <View style={styles.quoteArea}>
           <Text style={styles.quote}>
             “{showChuckNorrisPhrase()}”
@@ -287,6 +298,7 @@ export default function Home() {
   );
 }
 
+//estilos da tela
 const styles = StyleSheet.create({
   container: {
     flex: 1,

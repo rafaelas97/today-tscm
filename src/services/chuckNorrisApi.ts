@@ -13,3 +13,5 @@ export async function getChuckNorrisJoke(): Promise<ChuckNorrisResponse> {
 
   return data;
 }
+
+// busca as frases na api
